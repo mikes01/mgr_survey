@@ -1,4 +1,3 @@
-
 require "json"
 require 'capybara'
 require "selenium-webdriver"
@@ -6,31 +5,30 @@ require 'benchmark'
 require 'csv'
 require 'capybara/dsl'
 
-Capybara.run_server = false
-Capybara.current_driver = :selenium
-Capybara.app_host = 'http://localhost:2300/'
-Capybara.default_max_wait_time = 10
-
-REPEAT_TIMES = 1
-
 class CudPolygonTests
   include Capybara::DSL
-  def initialize
+  def initialize(address, framework, repeat_times)
+    @repeat_times = repeat_times
     @add_time = 0
     @update_time = 0
     @delete_time = 0
-    @file_name = "../results/hanami_cud_polygon_capybara_#{REPEAT_TIMES}.csv"
+    @file_name = "../results/#{framework}_cud_polygon_capybara_#{@repeat_times}.csv"
     @polygon_xpath_prefix = 'div.leaflet-pane.leaflet-map-pane div.leaflet-pane.leaflet-polygons-pane svg.leaflet-zoom-animated g path'
+
+    Capybara.run_server = false
+    Capybara.current_driver = :selenium
+    Capybara.app_host = address
+    Capybara.default_max_wait_time = 15
   end
 
   def run_tests
     prepare
-    REPEAT_TIMES.times do
+    @repeat_times.times do
       @add_time += Benchmark.realtime { add }
       @update_time += Benchmark.realtime { update }
       @delete_time += Benchmark.realtime { delete }
     end
-    results = { "Dodanie wielokątu" => @add_time/REPEAT_TIMES, "Zaktualizowanie wielokątu" => @update_time/REPEAT_TIMES, "Usunięcie wielokątu" => @delete_time/REPEAT_TIMES  }
+    results = { "Dodanie wielokątu" => @add_time/@repeat_times, "Zaktualizowanie wielokątu" => @update_time/@repeat_times, "Usunięcie wielokątu" => @delete_time/@repeat_times  }
     CSV.open(@file_name, "wb") do |csv|
       csv << results.keys
       csv << results.values
@@ -87,5 +85,3 @@ class CudPolygonTests
     page.has_no_css?(@polygon_xpath_prefix + '.updatedpolygon')
   end
 end
-
-CudPolygonTests.new.run_tests

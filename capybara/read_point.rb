@@ -1,4 +1,3 @@
-
 require "json"
 require 'capybara'
 require "selenium-webdriver"
@@ -6,20 +5,13 @@ require 'benchmark'
 require 'csv'
 require 'capybara/dsl'
 
-Capybara.run_server = false
-Capybara.current_driver = :selenium
-Capybara.app_host = 'http://localhost:2300/'
-Capybara.default_max_wait_time = 10
-Capybara.page.driver.browser.manage.window.maximize
-
-REPEAT_TIMES = 1
-
 class ReadPointTests
   include Capybara::DSL
-  def initialize
+  def initialize(address, framework, repeat_times)
+    @repeat_times = repeat_times
     @times = Array.new(6, 0)
     @counts = Array.new(6, nil)
-    @file_name = "../results/hanami_read_points_capybara_#{REPEAT_TIMES}.csv"
+    @file_name = "../results/#{framework}_read_points_capybara_#{@repeat_times}.csv"
     @selectors = [
       "//div[@id='map']/div/div[4]/div[@title='Osiedle Barbara']",
       "//div[@id='map']/div/div[4]/div[@title='Nowa Wieś']",
@@ -28,10 +20,16 @@ class ReadPointTests
       "//div[@id='map']/div/div[4]/div[@title='Jerzmanowo']",
       "//div[@id='map']/div/div[4]/div[@title='Wojczyce']" 
     ]
+
+    Capybara.run_server = false
+    Capybara.current_driver = :selenium
+    Capybara.app_host = address
+    Capybara.default_max_wait_time = 15
+    Capybara.page.driver.browser.manage.window.maximize
   end
 
   def run_tests
-    REPEAT_TIMES.times do
+    @repeat_times.times do
       prepare
       @selectors.each_with_index do |selector, index|
         @times[index] += Benchmark.realtime { read_points(selector) }
@@ -41,7 +39,7 @@ class ReadPointTests
     CSV.open(@file_name, "wb") do |csv|
       csv << ['Ilość punktów', 'Czas [s]']
       @times.each_with_index do |time, index|
-        csv << [@counts[index], time/REPEAT_TIMES]
+        csv << [@counts[index], time/@repeat_times]
       end
     end
   end
@@ -66,5 +64,3 @@ class ReadPointTests
     page.has_xpath?(selector)
   end
 end
-
-ReadPointTests.new.run_tests

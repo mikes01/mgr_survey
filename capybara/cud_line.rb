@@ -6,32 +6,31 @@ require 'benchmark'
 require 'csv'
 require 'capybara/dsl'
 
-Capybara.run_server = false
-Capybara.current_driver = :selenium
-Capybara.app_host = 'http://localhost:2300/'
-Capybara.default_max_wait_time = 10
-
-REPEAT_TIMES = 1
-
 class CudLineTests
   include Capybara::DSL
-  def initialize
+  def initialize(address, framework, repeat_times)
+    @repeat_times = repeat_times
     @add_time = 0
     @update_time = 0
     @delete_time = 0
-    @file_name = "../results/hanami_cud_line_capybara_#{REPEAT_TIMES}.csv"
+    @file_name = "../results/#{framework}_cud_line_capybara_#{@repeat_times}.csv"
     @line_css_prefix = "div#map.leaflet-container.leaflet-retina.leaflet-fade-anim.leaflet-grab.leaflet-touch-drag " +
       "div.leaflet-pane.leaflet-map-pane div.leaflet-pane.leaflet-lines-pane svg.leaflet-zoom-animated g path"
+
+    Capybara.run_server = false
+    Capybara.current_driver = :selenium
+    Capybara.app_host = address
+    Capybara.default_max_wait_time = 15
   end
 
   def run_tests
     prepare
-    REPEAT_TIMES.times do
+    @repeat_times.times do
       @add_time += Benchmark.realtime { add_point }
       @update_time += Benchmark.realtime { update_point }
       @delete_time += Benchmark.realtime { delete_point }
     end
-    results = { "Dodanie lini" => @add_time/REPEAT_TIMES, "Zaktualizowanie lini" => @update_time/REPEAT_TIMES, "Usunięcie lini" => @delete_time/REPEAT_TIMES  }
+    results = { "Dodanie lini" => @add_time/@repeat_times, "Zaktualizowanie lini" => @update_time/@repeat_times, "Usunięcie lini" => @delete_time/@repeat_times  }
     CSV.open(@file_name, "wb") do |csv|
       csv << results.keys
       csv << results.values
@@ -91,5 +90,3 @@ class CudLineTests
     page.has_no_css?(@line_css_prefix + ".updatedline")
   end
 end
-
-CudLineTests.new.run_tests
