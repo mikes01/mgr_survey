@@ -13,7 +13,7 @@ Capybara.default_max_wait_time = 5
 
 REPEAT_TIMES = 1
 
-class CudTests
+class CudPointTests
   include Capybara::DSL
   def initialize
     @add_time = 0
@@ -25,9 +25,9 @@ class CudTests
   def run_tests
     prepare
     REPEAT_TIMES.times do
-      @add_time = Benchmark.realtime { add_point }
-      @update_time = Benchmark.realtime { update_point }
-      @delete_time = Benchmark.realtime { delete_point }
+      @add_time += Benchmark.realtime { add_point }
+      @update_time += Benchmark.realtime { update_point }
+      @delete_time += Benchmark.realtime { delete_point }
     end
     results = { "Dodanie punktu" => @add_time/REPEAT_TIMES, "Zaktualizowanie punktu" => @update_time/REPEAT_TIMES, "Usunięcie punktu" => @delete_time/REPEAT_TIMES  }
     CSV.open(@file_name, "wb") do |csv|
