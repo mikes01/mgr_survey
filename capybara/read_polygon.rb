@@ -14,32 +14,34 @@ Capybara.page.driver.browser.manage.window.maximize
 
 REPEAT_TIMES = 1
 
-class ReadPointTests
+class ReadPolygonTests
   include Capybara::DSL
   def initialize
-    @times = Array.new(6, 0)
-    @counts = Array.new(6, nil)
-    @file_name = "../results/hanami_read_points_capybara_#{REPEAT_TIMES}.csv"
+    @times = Array.new(5, 0)
+    @counts = Array.new(5, nil)
+    @file_name = "../results/hanami_read_polygons_capybara_#{REPEAT_TIMES}.csv"
+    @polygon_css_prefix = 'div.leaflet-pane.leaflet-map-pane div.leaflet-pane.leaflet-polygons-pane svg.leaflet-zoom-animated g path'
     @selectors = [
-      "//div[@id='map']/div/div[4]/div[@title='Osiedle Barbara']",
-      "//div[@id='map']/div/div[4]/div[@title='Nowa Wieś']",
-      "//div[@id='map']/div/div[4]/div[@title='Osiedle Wanda']",
-      "//div[@id='map']/div/div[4]/div[@title='Nowy Dwór']",
-      "//div[@id='map']/div/div[4]/div[@title='Jerzmanowo']",
-      "//div[@id='map']/div/div[4]/div[@title='Wojczyce']" 
+      ".Grabiszyn",
+      ".Popowice",
+      ".Pilczyce",
+      ".Ratyń"
     ]
   end
 
   def run_tests
     REPEAT_TIMES.times do
       prepare
+      page.execute_script('$("#polygon_type").val(3).trigger("change")')
+      @times[0] += Benchmark.realtime { click_button("Refresh"); page.has_css?(@polygon_css_prefix + ".Południe")}
+      @counts[0] ||= find('#polygons_count').text 
       @selectors.each_with_index do |selector, index|
-        @times[index] += Benchmark.realtime { read_points(selector) }
-        @counts[index] ||= find('#points_count').text
+        @times[index+1] += Benchmark.realtime { read_polygons(@polygon_css_prefix + selector) }
+        @counts[index+1] ||= find('#polygons_count').text
       end
     end
     CSV.open(@file_name, "wb") do |csv|
-      csv << ['Ilość punktów', 'Czas [s]']
+      csv << ['Ilość wielokątów', 'Czas [s]']
       @times.each_with_index do |time, index|
         csv << [@counts[index], time/REPEAT_TIMES]
       end
@@ -54,17 +56,15 @@ class ReadPointTests
     click_button("clear-points")
     click_button("clear-lines") 
     click_button("clear-polygons")
-    click_button("all-points")
     click_button("Refresh")
-    sleep 5
-    find(:css, '.leaflet-control-zoom-in').click
+    page.has_no_xpath?('//*[@id="map"]/div[1]/div[9]/svg/g/path[1]')
     sleep 5
   end
   
-  def read_points(selector)
+  def read_polygons(selector)
     find(:css, '.leaflet-control-zoom-out').click
-    page.has_xpath?(selector)
+    page.has_css?(selector)
   end
 end
 
-ReadPointTests.new.run_tests
+ReadPolygonTests.new.run_tests

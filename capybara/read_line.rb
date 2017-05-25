@@ -18,32 +18,36 @@ class ReadLineTests
   include Capybara::DSL
   def initialize
     @times = Array.new(5, 0)
+    @counts = Array.new(5, nil)
     @file_name = "../results/hanami_read_lines_capybara_#{REPEAT_TIMES}.csv"
      @line_css_prefix = "div#map.leaflet-container.leaflet-retina.leaflet-fade-anim.leaflet-grab.leaflet-touch-drag " +
       "div.leaflet-pane.leaflet-map-pane div.leaflet-pane.leaflet-lines-pane svg.leaflet-zoom-animated g path"
     @selectors = [
-      ".Gwarna",
-      ".Zaolziańska",
-      ".Krucza",
-      ".Podróżnicza"
+      ".Czysta",
+      ".Studzienna",
+      ".Lwowska",
+      ".Kampinoska"
     ]
   end
 
   def run_tests
     REPEAT_TIMES.times do
       prepare
-      click_button("all-lines")
+      page.execute_script('$("#line_types").val(["residential", "secondary", "secondary_link", "primary", "primary_link",'+
+        '"tertiary", "tertiary_link", "living_street"]).trigger("change")')
       @times[0] += Benchmark.realtime { click_button("Refresh"); page.has_css?(@line_css_prefix + ".Komandorska")}
+      @counts[0] ||= find('#lines_count').text 
       @selectors.each_with_index do |selector, index|
         @times[index+1] += Benchmark.realtime { read_points(@line_css_prefix + selector) }
+        @counts[index+1] ||= find('#lines_count').text
       end
     end
-    puts @times
-    # results = { " punktu" => @add_time/REPEAT_TIMES, "Zaktualizowanie punktu" => @update_time/REPEAT_TIMES, "Usunięcie punktu" => @delete_time/REPEAT_TIMES  }
-    # CSV.open(@file_name, "wb") do |csv|
-    #   csv << results.keys
-    #   csv << results.values
-    # end
+    CSV.open(@file_name, "wb") do |csv|
+      csv << ['Ilość lini', 'Czas [s]']
+      @times.each_with_index do |time, index|
+        csv << [@counts[index], time/REPEAT_TIMES]
+      end
+    end
   end
 
   private

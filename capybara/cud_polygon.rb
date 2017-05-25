@@ -20,7 +20,7 @@ class CudPolygonTests
     @update_time = 0
     @delete_time = 0
     @file_name = "../results/hanami_cud_polygon_capybara_#{REPEAT_TIMES}.csv"
-    @polygon_xpath_prefix = 'html body div#maps.col-md-8 div#mappage div#map.leaflet-container.leaflet-retina.leaflet-fade-anim.leaflet-grab.leaflet-touch-drag div.leaflet-pane.leaflet-map-pane div.leaflet-pane.leaflet-polygons-pane svg.leaflet-zoom-animated g path'
+    @polygon_xpath_prefix = 'div.leaflet-pane.leaflet-map-pane div.leaflet-pane.leaflet-polygons-pane svg.leaflet-zoom-animated g path'
   end
 
   def run_tests
