@@ -10,6 +10,7 @@ class CudPolygonTests
   def initialize(address, framework, repeat_times)
     @repeat_times = repeat_times
     @add_time = 0
+    @read_time = 0
     @update_time = 0
     @delete_time = 0
     @file_name = "../results/#{framework}_cud_polygon_capybara_#{@repeat_times}.csv"
@@ -25,13 +26,19 @@ class CudPolygonTests
     prepare
     @repeat_times.times do
       @add_time += Benchmark.realtime { add }
+      prepare_read
+      @read_time += Benchmark.realtime { read }
       @update_time += Benchmark.realtime { update }
       @delete_time += Benchmark.realtime { delete }
     end
-    results = { "Dodanie wielokątu" => @add_time/@repeat_times, "Zaktualizowanie wielokątu" => @update_time/@repeat_times, "Usunięcie wielokątu" => @delete_time/@repeat_times  }
+    results = { "Wyświetlenie wielokątu" => @read_time/@repeat_times,
+      "Dodanie wielokątu" => @add_time/@repeat_times,
+      "Zaktualizowanie wielokątu" => @update_time/@repeat_times,
+      "Usunięcie wielokątu" => @delete_time/@repeat_times  }
     CSV.open(@file_name, "wb") do |csv|
-      csv << results.keys
-      csv << results.values
+      results.each do |key, value|
+        csv << [key, value]
+      end
     end
   end
 
@@ -46,6 +53,12 @@ class CudPolygonTests
     page.execute_script('$("#polygon_type").val(5).trigger("change")')
     click_button("refresh-map")
     page.has_no_css?(@polygon_xpath_prefix)
+  end
+
+  def prepare_read
+    click_button("clear-polygons")
+    click_button("refresh-map")
+    page.execute_script('$("#polygon_type").val(5).trigger("change")')
   end
   
   def add
@@ -62,6 +75,11 @@ class CudPolygonTests
     select('custom', from: 'Unit type')
     fill_in('polygon-terc', with: '1234567')
     click_button('Create')
+    page.has_css?(@polygon_xpath_prefix + '.testpolygon')
+  end
+
+  def read
+    click_button("refresh-map")
     page.has_css?(@polygon_xpath_prefix + '.testpolygon')
   end
 

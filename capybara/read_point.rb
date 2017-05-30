@@ -37,7 +37,7 @@ class ReadPointTests
       end
     end
     CSV.open(@file_name, "wb") do |csv|
-      csv << ['Ilość punktów', 'Czas [s]']
+      csv << ['count', 'time']
       @times.each_with_index do |time, index|
         csv << [@counts[index], time/@repeat_times]
       end
